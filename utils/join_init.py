@@ -3,7 +3,7 @@ User init. at first joining to the bot (init. user by the '/start' command)
 """
 from sqlite3 import Error
 
-from utils.db_utils import db_connect
+from utils.db import db_connect
 from configs import db_path
 from datetime import date
 

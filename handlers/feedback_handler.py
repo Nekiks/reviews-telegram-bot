@@ -13,11 +13,12 @@ from datetime import date
 
 from configs import BOT_TOKEN
 
-
 from utils import get_username
 from utils import check_user_team
 from utils import add_feedback, del_feedback, get_user_id_feedback, get_feedback_data
 from utils import get_team_by_invite_hash
+from utils import notify_about_feedback
+from utils import get_team_leader_id
 
 router_feedback = Router()
 
@@ -70,10 +71,25 @@ async def finish_send_feedback(message: types.Message, state: FSMContext):
 
     await state.update_data(content = message.text)
     data = await state.get_data()
-    add_feedback(user_id, team_id, current_date, data['content'], data['is_anonymous'])
+    feedback_id = add_feedback(user_id, team_id, current_date, data['content'], data['is_anonymous'])
     back_menu = InlineKeyboardButton(text='Вернуться в меню', callback_data='back_menu')
     inline_buttons = InlineKeyboardMarkup(inline_keyboard=[[back_menu]])
     await message.answer('Обращение отправлено лидеру и кураторам', reply_markup=inline_buttons)
+    bot = Bot(token=BOT_TOKEN)
+    leader_id = get_team_leader_id(team_id)
+    
+    open_feedback_btn = InlineKeyboardButton(text='Открыть обращение',callback_data=f'view_feedback_{feedback_id}')
+    answer_feedback_btn = InlineKeyboardButton(text='Ответить', callback_data=f'answer_feedback_{feedback_id}')
+    delete_feedback_btn = InlineKeyboardButton(text='Удалить', callback_data=f'delete_feedback_{feedback_id}')
+    inline_buttons = InlineKeyboardMarkup(inline_keyboard=[[open_feedback_btn], [answer_feedback_btn], [delete_feedback_btn]])
+    await bot.send_message(
+        leader_id, 
+        f'📥 Пришло новое обращение!\n <pre>{data['content']}</pre>',
+        parse_mode=ParseMode.HTML,
+        reply_markup=inline_buttons
+    )
+    await bot.session.close()
+    await state.clear()
 
 @router_feedback.callback_query(F.data.startswith('delete_feedback_'))
 async def delete_feedback(callback: CallbackQuery):
@@ -119,3 +135,4 @@ async def finish_answer_feedback(message: types.Message, state: FSMContext):
         await message.answer('⚠️ Произошла ошибка при отправке ответа', reply_markup=inline_buttons)
     finally:
         await bot.session.close()
+

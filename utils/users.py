@@ -1,5 +1,5 @@
 import sqlite3
-from utils.db_utils import db_connect
+from utils.db import db_connect
 from configs import db_path
 
 def get_user_id_username(username:str) -> int:
@@ -42,6 +42,20 @@ def check_user_is_admin(user_id:int) -> bool:
         return True
     else:
         return False
+
+def get_feedbacks_count_user(user_id:int) -> int:
+    conn = db_connect(db_path('feedbacks.db'))
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM feedbacks WHERE user_id = ?", (user_id,))
+    data = cursor.fetchone()
+    return data[0]
+
+def get_reg_date_user(user_id) -> str:
+    conn = db_connect(db_path('users.db'))
+    cursor = conn.cursor()
+    cursor.execute("SELECT reg_date FROM users WHERE user_id = ?", (user_id,))
+    data = cursor.fetchone()
+    return data[0]
 
 if __name__ == '__main__':
     check_user_is_leader(830401599)

@@ -1,5 +1,5 @@
 import sqlite3
-from .db_utils import db_connect
+from utils.db import db_connect
 from configs import db_path
 from datetime import date
 from aiogram import Bot
@@ -121,6 +121,13 @@ def get_team_data(team_id:int) -> list:
     data = cursor.fetchone()
     return data
 
+def get_team_leader_id(team_id:int) -> int:
+    conn = db_connect(db_path(db_path('teams.db')))
+    cursor = conn.cursor()
+    cursor.execute("SELECT leader_id FROM teams WHERE team_id = ?", (team_id,))
+    data = cursor.fetchone()
+    return data[0]
+
 def add_team_invite_hash(team_id: int, invite_hash: str) -> None:
     conn = db_connect(db_path('teams.db'))
     cursor = conn.cursor()
@@ -140,7 +147,7 @@ def get_team_inviting_link(team_id:int) -> str:
     data = cursor.fetchone()
     return data[0]
 
-def get_team_by_invite_hash(invite_hash:str) -> str | None:
+def get_team_by_invite_hash(invite_hash:str) -> int | None:
     try:
         conn = db_connect(db_path('teams.db'))
         cursor = conn.cursor()
@@ -150,12 +157,12 @@ def get_team_by_invite_hash(invite_hash:str) -> str | None:
     except:
         return None
 
-# def generate_team_inviting_link(bot: Bot, team_id:int) -> str:
-#     invite_hash = f'team_{secrets.token_hex()}'
-#     add_team_invite_hash(team_id, invite_hash)
-
-#     invite_link = create_start_link(bot=Bot, payload=invite_hash, encode=True)
-#     return invite_link
+def get_count_team_members(team_id:int) -> int:
+    conn = db_connect(db_path('users.db'))
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users WHERE team_id = ?", (team_id,))
+    data = cursor.fetchone()
+    return int(data[0])
 
 def generate_team_inviting_link(bot_username:str, team_id:int) -> str:
     invite_hash = f'{secrets.token_urlsafe(16)}'
@@ -163,6 +170,13 @@ def generate_team_inviting_link(bot_username:str, team_id:int) -> str:
     add_team_invite_link(team_id, invite_link)
     add_team_invite_hash(team_id, invite_hash)
     return invite_link
+
+def get_team_users(team_id:int) -> tuple:
+    conn = db_connect(db_path('users.db'))
+    cursror = conn.cursor()
+    cursror.execute("SELECT user_id, user_name, user_lastname FROM users WHERE team_id = ?", (team_id,))
+    data = cursror.fetchall()
+    return data
 
 """Testing code"""
 if __name__ == '__main__':

@@ -1,6 +1,11 @@
 from configs import db_path
 
-from .db_utils import db_connect
+from utils.db import db_connect
+
+from utils.teams import get_team_leader_id
+
+import aiogram
+
 import sqlite3
 
 def add_feedback(user_id:int, team_id:int, date:str, content:str, is_anonymous:bool) -> bool:
@@ -9,12 +14,13 @@ def add_feedback(user_id:int, team_id:int, date:str, content:str, is_anonymous:b
         try:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO feedbacks (user_id, team_id, content, date, is_closed, is_anonymous) VALUES (?, ?, ?, ?, ?, ?)", (user_id, team_id, content, date, False, is_anonymous))
+            feedback_id = cursor.lastrowid 
             conn.commit()
             """Success adding to database"""
-            return True 
+            return feedback_id 
         except sqlite3.IntegrityError:
             """If user is not in team"""
-            return False
+            return None
         finally:
             conn.close()
 
@@ -53,6 +59,10 @@ def get_user_id_feedback(feedback_id:int) -> int:
     cursor.execute("SELECT user_id FROM feedbacks WHERE feedback_id = ?", (feedback_id,))
     data = cursor.fetchone()
     return int(data[0])
+
+def notify_about_feedback(bot:aiogram.Bot, team_id:int, content:str):
+    leader_id = get_team_leader_id()
+    bot.send_message(leader_id, 'Пришло обращение!')
 
 """
 Func main() for testing code
